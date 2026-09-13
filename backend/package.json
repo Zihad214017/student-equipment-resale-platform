@@ -1,0 +1,56 @@
+{
+  "name": "smart-student-equipment-backend",
+  "version": "1.0.0",
+  "description": "Backend API and Database for Smart Student Old Equipment Tracking and Resale Platform",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "migrate": "node src/db/migrate.js",
+    "seed": "node src/db/seed.js",
+    "db:verify": "node src/db/verify.js",
+    "db:reset": "node src/db/migrate.js && node src/db/seed.js",
+    "test": "node tests/foundation.test.js",
+    "test:auth": "node tests/auth_rbac.test.js",
+    "test:profile": "node tests/profile_management.test.js",
+    "test:equipment": "node tests/equipment_category.test.js",
+    "test:search": "node tests/search_filter.test.js",
+    "test:request": "node tests/purchase_request.test.js",
+    "test:tx": "node tests/transaction_tracking.test.js",
+    "test:notif": "node tests/notifications.test.js",
+    "test:review": "node tests/reviews_ratings.test.js",
+    "test:admin": "node tests/admin_management.test.js",
+    "test:audit": "node tests/complete_platform_audit.test.js",
+    "test:all": "node src/db/verify.js && node tests/foundation.test.js && node tests/auth_rbac.test.js && node tests/profile_management.test.js && node tests/equipment_category.test.js && node tests/search_filter.test.js && node tests/purchase_request.test.js && node tests/transaction_tracking.test.js && node tests/notifications.test.js && node tests/reviews_ratings.test.js && node tests/admin_management.test.js && node tests/complete_platform_audit.test.js"
+  },
+  "keywords": [
+    "student-marketplace",
+    "equipment-tracking",
+    "resale-platform",
+    "postgresql",
+    "express",
+    "nodejs",
+    "jwt",
+    "rest-api",
+    "rbac"
+  ],
+  "author": "Antigravity Lead Architect",
+  "license": "ISC",
+  "dependencies": {
+    "@electric-sql/pglite": "^0.2.14",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.13.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0"
+  }
+}
