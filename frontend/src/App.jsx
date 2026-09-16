@@ -40,6 +40,7 @@ import ProfilePage from './pages/shared/ProfilePage';
 import NotificationsPage from './pages/shared/NotificationsPage';
 
 // Admin Pages
+import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminEquipmentPage from './pages/admin/AdminEquipmentPage';
@@ -92,6 +93,7 @@ function App() {
             </Route>
 
             {/* 3. Administrator Console Routes */}
+            <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route
               path="/admin"
               element={

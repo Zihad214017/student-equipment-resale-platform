@@ -66,8 +66,48 @@ const adminUpdateUserSchema = z.object({
     .max(30, 'Phone number cannot exceed 30 characters')
     .optional()
     .nullable(),
-  role: z.enum([USER_ROLES.STUDENT, USER_ROLES.ADMIN]).optional(),
-  is_active: z.boolean().optional(),
+});
+
+const adminCreateUserSchema = z.object({
+  student_id: z
+    .string({ required_error: 'Student/University ID is required' })
+    .trim()
+    .min(3, 'Student ID must be at least 3 characters')
+    .max(50, 'Student ID cannot exceed 50 characters'),
+  full_name: z
+    .string({ required_error: 'Full name is required' })
+    .trim()
+    .min(2, 'Full name must be at least 2 characters')
+    .max(150, 'Full name cannot exceed 150 characters'),
+  email: z
+    .string({ required_error: 'Email address is required' })
+    .trim()
+    .toLowerCase()
+    .email('Please provide a valid email address'),
+  password: z
+    .string({ required_error: 'Password is required' })
+    .min(6, 'Password must be at least 6 characters')
+    .max(100, 'Password cannot exceed 100 characters'),
+  phone: z
+    .string()
+    .trim()
+    .max(30, 'Phone number cannot exceed 30 characters')
+    .optional()
+    .nullable(),
+  department: z
+    .string()
+    .trim()
+    .max(100, 'Department name cannot exceed 100 characters')
+    .optional()
+    .nullable(),
+  role: z.enum([USER_ROLES.STUDENT, USER_ROLES.ADMIN]).optional().default(USER_ROLES.STUDENT),
+  is_active: z.boolean().optional().default(true),
+  avatar_url: z
+    .string()
+    .url('Avatar must be a valid URL')
+    .optional()
+    .nullable()
+    .or(z.literal('')),
 });
 
 module.exports = {
@@ -75,4 +115,5 @@ module.exports = {
   changePasswordSchema,
   toggleUserStatusSchema,
   adminUpdateUserSchema,
+  adminCreateUserSchema,
 };

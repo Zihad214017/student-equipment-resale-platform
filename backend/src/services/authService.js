@@ -15,9 +15,11 @@ const registerUser = async (userData) => {
     password,
     phone,
     department,
-    role = USER_ROLES.STUDENT,
     avatar_url,
   } = userData;
+
+  // Security: Public registration can strictly ONLY create student accounts.
+  const assignedRole = USER_ROLES.STUDENT;
 
   // 1. Check for duplicate email
   const emailCheck = await db.query('SELECT id FROM users WHERE email = $1', [email]);
@@ -55,7 +57,7 @@ const registerUser = async (userData) => {
     passwordHash,
     phone || null,
     department || null,
-    role,
+    assignedRole,
     avatar_url || null,
   ]);
 

@@ -20,8 +20,9 @@
     "test:notif": "node tests/notifications.test.js",
     "test:review": "node tests/reviews_ratings.test.js",
     "test:admin": "node tests/admin_management.test.js",
+    "test:admin_security": "node tests/admin_auth_security.test.js",
     "test:audit": "node tests/complete_platform_audit.test.js",
-    "test:all": "node src/db/verify.js && node tests/foundation.test.js && node tests/auth_rbac.test.js && node tests/profile_management.test.js && node tests/equipment_category.test.js && node tests/search_filter.test.js && node tests/purchase_request.test.js && node tests/transaction_tracking.test.js && node tests/notifications.test.js && node tests/reviews_ratings.test.js && node tests/admin_management.test.js && node tests/complete_platform_audit.test.js"
+    "test:all": "node src/db/verify.js && node tests/foundation.test.js && node tests/auth_rbac.test.js && node tests/profile_management.test.js && node tests/equipment_category.test.js && node tests/search_filter.test.js && node tests/purchase_request.test.js && node tests/transaction_tracking.test.js && node tests/notifications.test.js && node tests/reviews_ratings.test.js && node tests/admin_management.test.js && node tests/admin_auth_security.test.js && node tests/complete_platform_audit.test.js"
   },
   "keywords": [
     "student-marketplace",

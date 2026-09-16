@@ -7,6 +7,7 @@ export const adminApi = {
   // User Management
   getUsers: (params = {}) => api.get('/admin/users', { params }),
   getUserById: (id) => api.get(`/admin/users/${id}`),
+  createUser: (data) => api.post('/admin/users', data),
   toggleUserStatus: (id, isActive) => api.patch(`/admin/users/${id}/toggle-status`, { is_active: isActive }),
   updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
 

@@ -450,6 +450,78 @@ const adminUpdateUser = async (adminId, targetUserId, updateData) => {
   return updatedUser;
 };
 
+/**
+ * Admin: Create User Account (Student or Administrator)
+ * @param {string} adminId 
+ * @param {object} userData 
+ */
+const adminCreateUser = async (adminId, userData) => {
+  const {
+    student_id,
+    full_name,
+    email,
+    password,
+    phone,
+    department,
+    role = 'student',
+    is_active = true,
+    avatar_url,
+  } = userData;
+
+  // 1. Check duplicate email
+  const emailCheck = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+  if (emailCheck.rows.length > 0) {
+    const error = new Error('An account with this email address already exists.');
+    error.statusCode = 409;
+    error.isOperational = true;
+    throw error;
+  }
+
+  // 2. Check duplicate student_id
+  const studentIdCheck = await db.query('SELECT id FROM users WHERE student_id = $1', [student_id]);
+  if (studentIdCheck.rows.length > 0) {
+    const error = new Error('An account with this Student / University ID already exists.');
+    error.statusCode = 409;
+    error.isOperational = true;
+    throw error;
+  }
+
+  // 3. Hash password
+  const passwordHash = await hashPassword(password);
+
+  // 4. Insert user
+  const insertQuery = `
+    INSERT INTO users (
+      student_id, full_name, email, password_hash, phone, department, role, avatar_url, is_active
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    RETURNING id, student_id, full_name, email, role, phone, department, avatar_url, is_active, created_at, updated_at;
+  `;
+
+  const result = await db.query(insertQuery, [
+    student_id,
+    full_name,
+    email,
+    passwordHash,
+    phone || null,
+    department || null,
+    role,
+    avatar_url || null,
+    is_active,
+  ]);
+
+  const newUser = result.rows[0];
+
+  // 5. Audit log
+  await db.query(
+    `INSERT INTO audit_logs (admin_id, action, target_type, target_id, details)
+     VALUES ($1, 'USER_CREATED_BY_ADMIN', 'user', $2, $3)`,
+    [adminId, newUser.id, JSON.stringify({ email: newUser.email, role: newUser.role, student_id: newUser.student_id })]
+  );
+
+  logger.info('Admin created user account', { adminId, newUserId: newUser.id, role: newUser.role });
+  return newUser;
+};
+
 module.exports = {
   getOwnProfile,
   updateOwnProfile,
@@ -459,4 +531,5 @@ module.exports = {
   adminGetUserById,
   adminToggleUserStatus,
   adminUpdateUser,
+  adminCreateUser,
 };

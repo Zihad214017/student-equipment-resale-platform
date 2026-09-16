@@ -95,7 +95,12 @@ const Footer = () => {
 
         <div className="mt-12 pt-6 border-t border-slate-800 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>© {new Date().getFullYear()} CampusEquip. Smart Student Equipment Tracking & Resale Platform.</p>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-4">
+            <Link to="/admin/login" className="text-slate-400 hover:text-amber-400 transition-colors flex items-center gap-1 text-[11px]">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+              <span>Admin Console</span>
+            </Link>
+            <span>•</span>
             <span>Built with care for university pair programming</span>
           </div>
         </div>

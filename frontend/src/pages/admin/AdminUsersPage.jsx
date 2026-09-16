@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Search, Power, Edit3, Shield, UserCheck, UserX, Eye, ShieldAlert, CheckCircle } from 'lucide-react';
+import { Users, Search, Power, Edit3, Shield, UserCheck, UserX, Eye, ShieldAlert, CheckCircle, UserPlus } from 'lucide-react';
 import { adminApi } from '../../api/adminApi';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
@@ -36,6 +36,21 @@ const AdminUsersPage = () => {
   const [toggleModalOpen, setToggleModalOpen] = useState(false);
   const [userToToggle, setUserToToggle] = useState(null);
   const [submittingToggle, setSubmittingToggle] = useState(false);
+
+  // Create User Modal
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createFormData, setCreateFormData] = useState({
+    student_id: '',
+    full_name: '',
+    email: '',
+    password: '',
+    department: '',
+    phone: '',
+    role: 'student',
+    is_active: true,
+  });
+  const [createErrors, setCreateErrors] = useState([]);
+  const [submittingCreate, setSubmittingCreate] = useState(false);
 
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -143,6 +158,43 @@ const AdminUsersPage = () => {
     }
   };
 
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittingCreate(true);
+    setCreateErrors([]);
+    try {
+      await adminApi.createUser({
+        student_id: createFormData.student_id.trim(),
+        full_name: createFormData.full_name.trim(),
+        email: createFormData.email.trim(),
+        password: createFormData.password,
+        department: createFormData.department.trim() || undefined,
+        phone: createFormData.phone.trim() || undefined,
+        role: createFormData.role,
+        is_active: createFormData.is_active,
+      });
+
+      setCreateModalOpen(false);
+      setCreateFormData({
+        student_id: '',
+        full_name: '',
+        email: '',
+        password: '',
+        department: '',
+        phone: '',
+        role: 'student',
+        is_active: true,
+      });
+      setActionSuccess(`New ${createFormData.role} account created successfully.`);
+      setTimeout(() => setActionSuccess(null), 4000);
+      fetchUsers(1);
+    } catch (err) {
+      setCreateErrors(err?.errors || [err?.message || 'Failed to create user account.']);
+    } finally {
+      setSubmittingCreate(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -151,6 +203,18 @@ const AdminUsersPage = () => {
           <p className="text-xs text-slate-500 mt-0.5">
             Audit registered student accounts, toggle active status, and maintain platform security
           </p>
+        </div>
+        <div>
+          <Button
+            variant="primary"
+            icon={UserPlus}
+            onClick={() => {
+              setCreateErrors([]);
+              setCreateModalOpen(true);
+            }}
+          >
+            Create Account
+          </Button>
         </div>
       </div>
 
@@ -448,6 +512,132 @@ const AdminUsersPage = () => {
             </div>
           </form>
         )}
+      </Modal>
+
+      {/* Create User / Admin Modal */}
+      <Modal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        title="Create University Account"
+      >
+        <form onSubmit={handleCreateSubmit} className="space-y-3.5 text-xs">
+          <p className="text-slate-500 leading-relaxed text-[11px]">
+            Manually register a verified student or create a new system administrator with administrative privileges.
+          </p>
+
+          <ErrorAlert
+            errors={createErrors}
+            onDismiss={() => setCreateErrors([])}
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Student / Staff ID"
+              required
+              placeholder="e.g. STU-2026-0042 or ADMIN-002"
+              value={createFormData.student_id}
+              onChange={(e) => setCreateFormData({ ...createFormData, student_id: e.target.value })}
+            />
+
+            <Input
+              label="Full Name"
+              required
+              placeholder="e.g. Jane Doe"
+              value={createFormData.full_name}
+              onChange={(e) => setCreateFormData({ ...createFormData, full_name: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="University Email"
+              type="email"
+              required
+              placeholder="e.g. user@university.edu"
+              value={createFormData.email}
+              onChange={(e) => setCreateFormData({ ...createFormData, email: e.target.value })}
+            />
+
+            <Input
+              label="Initial Password"
+              type="password"
+              required
+              placeholder="Min. 6 characters"
+              value={createFormData.password}
+              onChange={(e) => setCreateFormData({ ...createFormData, password: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Department"
+              placeholder="e.g. Computer Science"
+              value={createFormData.department}
+              onChange={(e) => setCreateFormData({ ...createFormData, department: e.target.value })}
+            />
+
+            <Input
+              label="Phone Number"
+              placeholder="e.g. +1 (555) 019-2831"
+              value={createFormData.phone}
+              onChange={(e) => setCreateFormData({ ...createFormData, phone: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                Account Role
+              </label>
+              <select
+                value={createFormData.role}
+                onChange={(e) => setCreateFormData({ ...createFormData, role: e.target.value })}
+                className="w-full text-xs rounded-xl border border-slate-200 py-2 px-3 bg-white text-slate-800 font-semibold focus:outline-none focus:border-indigo-500"
+              >
+                <option value="student">Student (Buyer / Seller)</option>
+                <option value="admin">Administrator (Full Access)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                Initial Account Status
+              </label>
+              <select
+                value={createFormData.is_active ? 'active' : 'inactive'}
+                onChange={(e) => setCreateFormData({ ...createFormData, is_active: e.target.value === 'active' })}
+                className="w-full text-xs rounded-xl border border-slate-200 py-2 px-3 bg-white text-slate-800 font-semibold focus:outline-none focus:border-indigo-500"
+              >
+                <option value="active">Active (Can Sign In Immediately)</option>
+                <option value="inactive">Inactive / Suspended</option>
+              </select>
+            </div>
+          </div>
+
+          {createFormData.role === 'admin' && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] leading-relaxed">
+              <strong className="font-semibold block">⚠️ Caution: Administrator Privileges</strong>
+              This user will have full access to platform reports, listings moderation, user suspension, and financial transaction audits.
+            </div>
+          )}
+
+          <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCreateModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={submittingCreate}
+            >
+              Create Account
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

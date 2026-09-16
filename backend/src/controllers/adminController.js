@@ -79,10 +79,24 @@ const getPlatformStatistics = async (req, res, next) => {
   }
 };
 
+/**
+ * Admin: Create a new student or admin user
+ * POST /api/v1/admin/users
+ */
+const createUser = async (req, res, next) => {
+  try {
+    const newUser = await userService.adminCreateUser(req.user.id, req.body);
+    return ApiResponse.created(res, 'User created successfully by administrator.', newUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,
   toggleUserStatus,
   updateUser,
+  createUser,
   getPlatformStatistics,
 };

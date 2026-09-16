@@ -215,11 +215,19 @@ const LoginPage = () => {
             </div>
           </div>
 
-          <div className="text-center text-xs text-slate-500 pt-2 border-t border-slate-100">
-            Don't have an account?{' '}
-            <Link to="/register" className="font-semibold text-indigo-600 hover:text-indigo-500">
-              Create Student Account
-            </Link>
+          <div className="text-center text-xs text-slate-500 pt-2 border-t border-slate-100 space-y-2">
+            <div>
+              Don't have an account?{' '}
+              <Link to="/register" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                Create Student Account
+              </Link>
+            </div>
+            <div className="pt-1">
+              <Link to="/admin/login" className="text-[11px] font-medium text-slate-400 hover:text-amber-600 transition-colors inline-flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                <span>University Staff & Admin Console</span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

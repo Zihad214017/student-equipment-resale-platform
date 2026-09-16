@@ -5,7 +5,7 @@ const equipmentController = require('../controllers/equipmentController');
 const categoryController = require('../controllers/categoryController');
 const transactionController = require('../controllers/transactionController');
 const validate = require('../validators/validator');
-const { toggleUserStatusSchema, adminUpdateUserSchema } = require('../validators/userValidator');
+const { toggleUserStatusSchema, adminUpdateUserSchema, adminCreateUserSchema } = require('../validators/userValidator');
 const { adminApprovalSchema, updateEquipmentStatusSchema } = require('../validators/equipmentValidator');
 const { createCategorySchema, updateCategorySchema } = require('../validators/categoryValidator');
 const { updateTransactionStatusSchema } = require('../validators/transactionValidator');
@@ -22,6 +22,7 @@ router.get('/statistics', adminController.getPlatformStatistics);
 
 // 2. User Management Routes
 router.get('/users', adminController.getUsers);
+router.post('/users', validate(adminCreateUserSchema), adminController.createUser);
 router.get('/users/:id', adminController.getUserById);
 router.patch('/users/:id/toggle-status', validate(toggleUserStatusSchema), adminController.toggleUserStatus);
 router.put('/users/:id', validate(adminUpdateUserSchema), adminController.updateUser);

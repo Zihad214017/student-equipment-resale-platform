@@ -46,12 +46,6 @@ const registerSchema = z.object({
     .max(100, 'Department name cannot exceed 100 characters')
     .optional()
     .nullable(),
-  role: z
-    .enum([USER_ROLES.STUDENT, USER_ROLES.ADMIN], {
-      errorMap: () => ({ message: `Role must be either '${USER_ROLES.STUDENT}' or '${USER_ROLES.ADMIN}'` }),
-    })
-    .optional()
-    .default(USER_ROLES.STUDENT),
   avatar_url: z
     .string()
     .url('Avatar must be a valid URL')

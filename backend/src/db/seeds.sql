@@ -4,7 +4,7 @@
 -- ============================================================================
 
 -- Clean existing data
-TRUNCATE audit_logs, notifications, reviews, transactions, purchase_requests, equipment_images, equipment_listings, categories, users CASCADE;
+TRUNCATE payments, audit_logs, notifications, reviews, transactions, purchase_requests, equipment_images, equipment_listings, categories, users CASCADE;
 
 -- ----------------------------------------------------------------------------
 -- 1. SEED USERS (Default password for all seed users: Password123!)
