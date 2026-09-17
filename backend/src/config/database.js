@@ -1,17 +1,48 @@
 const { Pool } = require('pg');
-const fs = require('fs');
-const path = require('path');
 const config = require('./env');
 const logger = require('../utils/logger');
 
-let pool = null;
-let pgliteInstance = null;
-let isEmbeddedFallback = false;
+/**
+ * Configure SSL for PostgreSQL connection
+ * Neon PostgreSQL and remote cloud providers require SSL (rejectUnauthorized: false for Node pg)
+ */
+const getSSLConfig = () => {
+  if (process.env.DB_SSL === 'false') return false;
+  if (process.env.DB_SSL === 'true') return { rejectUnauthorized: false };
 
-// Initialize standard pg.Pool
-const poolConfig = process.env.DATABASE_URL
+  const dbUrl = process.env.DATABASE_URL || config.db?.url || '';
+  const isLocal = !dbUrl || dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
+
+  if (dbUrl) {
+    if (isLocal) return false;
+    // Neon, Render, Supabase, AWS RDS, or production deployments
+    if (
+      dbUrl.includes('sslmode=require') ||
+      dbUrl.includes('neon.tech') ||
+      dbUrl.includes('render.com') ||
+      dbUrl.includes('amazonaws.com') ||
+      config.env === 'production'
+    ) {
+      return { rejectUnauthorized: false };
+    }
+    return { rejectUnauthorized: false };
+  }
+
+  if (config.env === 'production' && (config.db.host !== 'localhost' && config.db.host !== '127.0.0.1')) {
+    return { rejectUnauthorized: false };
+  }
+
+  return false;
+};
+
+const databaseUrl = process.env.DATABASE_URL || config.db?.url;
+const sslConfig = getSSLConfig();
+
+// Initialize standard pg.Pool using DATABASE_URL or individual parameters
+const poolConfig = databaseUrl
   ? {
-      connectionString: process.env.DATABASE_URL,
+      connectionString: databaseUrl,
+      ssl: sslConfig,
       max: config.db.max,
       idleTimeoutMillis: config.db.idleTimeoutMillis,
       connectionTimeoutMillis: config.db.connectionTimeoutMillis,
@@ -22,50 +53,17 @@ const poolConfig = process.env.DATABASE_URL
       database: config.db.database,
       user: config.db.user,
       password: config.db.password,
+      ssl: sslConfig,
       max: config.db.max,
       idleTimeoutMillis: config.db.idleTimeoutMillis,
       connectionTimeoutMillis: config.db.connectionTimeoutMillis,
     };
 
-pool = new Pool(poolConfig);
+const pool = new Pool(poolConfig);
 
 pool.on('error', (err) => {
   logger.error('Unexpected error on idle PostgreSQL client pool', { error: err.message });
 });
-
-/**
- * Initialize embedded PostgreSQL fallback if live PostgreSQL server is unreachable
- */
-async function initEmbeddedFallback() {
-  if (pgliteInstance) return pgliteInstance;
-
-  try {
-    const { PGlite } = require('@electric-sql/pglite');
-    logger.info('Initializing embedded PostgreSQL database engine (PGlite)...');
-    pgliteInstance = new PGlite();
-
-    const schemaPath = path.resolve(__dirname, '../db/schema.sql');
-    const seedsPath = path.resolve(__dirname, '../db/seeds.sql');
-
-    if (fs.existsSync(schemaPath)) {
-      const schemaSql = fs.readFileSync(schemaPath, 'utf-8');
-      await pgliteInstance.exec(schemaSql);
-      logger.info('Embedded PostgreSQL schema loaded successfully.');
-    }
-
-    if (fs.existsSync(seedsPath)) {
-      const seedsSql = fs.readFileSync(seedsPath, 'utf-8');
-      await pgliteInstance.exec(seedsSql);
-      logger.info('Embedded PostgreSQL seed data loaded successfully.');
-    }
-
-    isEmbeddedFallback = true;
-    return pgliteInstance;
-  } catch (err) {
-    logger.error('Failed to initialize embedded PostgreSQL engine', { error: err.message });
-    throw err;
-  }
-}
 
 /**
  * Execute parameterized SQL query
@@ -75,35 +73,12 @@ async function initEmbeddedFallback() {
  */
 const query = async (text, params = []) => {
   const start = Date.now();
-
-  if (isEmbeddedFallback && pgliteInstance) {
-    try {
-      const res = await pgliteInstance.query(text, params);
-      const duration = Date.now() - start;
-      logger.debug('Executed Query (Embedded)', { duration: `${duration}ms`, rows: res.rows.length });
-      return {
-        rows: res.rows,
-        rowCount: res.rows.length,
-        fields: res.fields,
-      };
-    } catch (err) {
-      logger.error('Embedded Query Execution Error', { text, error: err.message });
-      throw err;
-    }
-  }
-
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    logger.debug('Executed Query (Live Pool)', { duration: `${duration}ms`, rows: res.rowCount });
+    logger.debug('Executed Query', { duration: `${duration}ms`, rows: res.rowCount });
     return res;
   } catch (error) {
-    // If connection refused to host postgres, attempt fallback if not already tried
-    if ((error.code === 'ECONNREFUSED' || error.message.includes('Connection terminated') || error.code === 'ENOTFOUND') && !isEmbeddedFallback) {
-      logger.warn('Live PostgreSQL unreachable. Switching to embedded PostgreSQL engine...', { error: error.message });
-      await initEmbeddedFallback();
-      return query(text, params);
-    }
     logger.error('Database Query Error', { text, error: error.message });
     throw error;
   }
@@ -115,29 +90,12 @@ const query = async (text, params = []) => {
  */
 const exec = async (sql) => {
   const start = Date.now();
-  if (isEmbeddedFallback && pgliteInstance) {
-    try {
-      await pgliteInstance.exec(sql);
-      const duration = Date.now() - start;
-      logger.debug('Executed Raw SQL script (Embedded)', { duration: `${duration}ms` });
-      return true;
-    } catch (err) {
-      logger.error('Embedded Exec Error', { error: err.message });
-      throw err;
-    }
-  }
-
   try {
     await pool.query(sql);
     const duration = Date.now() - start;
-    logger.debug('Executed Raw SQL script (Live Pool)', { duration: `${duration}ms` });
+    logger.debug('Executed Raw SQL script', { duration: `${duration}ms` });
     return true;
   } catch (error) {
-    if ((error.code === 'ECONNREFUSED' || error.message.includes('Connection terminated') || error.code === 'ENOTFOUND') && !isEmbeddedFallback) {
-      logger.warn('Live PostgreSQL unreachable. Switching to embedded PostgreSQL engine...', { error: error.message });
-      await initEmbeddedFallback();
-      return exec(sql);
-    }
     logger.error('Database Exec Error', { error: error.message });
     throw error;
   }
@@ -147,22 +105,11 @@ const exec = async (sql) => {
  * Dedicated client interface (supports transactions: BEGIN, COMMIT, ROLLBACK)
  */
 const getClient = async () => {
-  if (isEmbeddedFallback && pgliteInstance) {
-    return {
-      query: (text, params) => query(text, params),
-      release: () => {},
-    };
-  }
-
   try {
     const client = await pool.connect();
     return client;
   } catch (error) {
-    if ((error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') && !isEmbeddedFallback) {
-      logger.warn('Live PostgreSQL unreachable during getClient. Switching to embedded PostgreSQL...');
-      await initEmbeddedFallback();
-      return getClient();
-    }
+    logger.error('Failed to acquire client from pool', { error: error.message });
     throw error;
   }
 };
@@ -176,12 +123,15 @@ const testConnection = async () => {
     const row = res.rows[0];
     logger.info('Database connection established', {
       time: row.current_time,
-      mode: isEmbeddedFallback ? 'Embedded PostgreSQL (PGlite)' : 'Live PostgreSQL (pg.Pool)',
+      mode: 'PostgreSQL Pool (Live)',
+      ssl: !!sslConfig,
     });
     return {
       connected: true,
-      mode: isEmbeddedFallback ? 'Embedded PostgreSQL' : 'PostgreSQL Pool',
+      mode: 'PostgreSQL Pool (Live)',
+      ssl: !!sslConfig,
       serverTime: row.current_time,
+      version: row.version,
     };
   } catch (err) {
     logger.error('Database connection probe failed', { error: err.message });
@@ -198,5 +148,4 @@ module.exports = {
   exec,
   getClient,
   testConnection,
-  initEmbeddedFallback,
 };

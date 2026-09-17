@@ -1,23 +1,41 @@
 const path = require('path');
+const fs = require('fs');
 const dotenv = require('dotenv');
 
-// Load .env file from backend root
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Load .env file from backend directory or workspace root
+const backendEnvPath = path.resolve(__dirname, '../../.env');
+const rootEnvPath = path.resolve(__dirname, '../../../.env');
+
+if (fs.existsSync(backendEnvPath)) {
+  dotenv.config({ path: backendEnvPath });
+} else if (fs.existsSync(rootEnvPath)) {
+  dotenv.config({ path: rootEnvPath });
+} else {
+  dotenv.config(); // fallback to default dotenv resolution
+}
 
 const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT, 10) || 5000,
   
+  cors: {
+    frontendUrl: process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:3000',
+    allowedOrigins: process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+      : [],
+  },
+
   db: {
+    url: process.env.DATABASE_URL || '',
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT, 10) || 5432,
     database: process.env.DB_NAME || 'student_equipment_db',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
-    url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/student_equipment_db',
+    ssl: process.env.DB_SSL === 'true',
     max: parseInt(process.env.DB_POOL_MAX, 10) || 20,
     idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT_MS, 10) || 30000,
-    connectionTimeoutMillis: parseInt(process.env.DB_POOL_CONNECTION_TIMEOUT_MS, 10) || 2000,
+    connectionTimeoutMillis: parseInt(process.env.DB_POOL_CONNECTION_TIMEOUT_MS, 10) || 10000,
   },
 
   jwt: {

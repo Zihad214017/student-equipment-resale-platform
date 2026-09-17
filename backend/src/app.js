@@ -20,25 +20,53 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// 2. CORS Configuration
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:5173',
-];
+// 2. Dynamic CORS Configuration (Supports local React, Vercel frontend, and configured origins)
+const getAllowedOrigins = () => {
+  const defaults = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173',
+  ];
+
+  const envOrigins = [
+    config.cors.frontendUrl,
+    ...(config.cors.allowedOrigins || []),
+  ]
+    .filter(Boolean)
+    .map((o) => o.trim().replace(/\/$/, ''));
+
+  return [...new Set([...defaults, ...envOrigins])];
+};
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. mobile apps, curl, Postman)
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow requests with no origin (e.g. mobile apps, curl, Postman, server-to-server)
+    if (!origin) {
       return callback(null, true);
     }
-    return callback(null, true); // Permissive in development
+
+    const origins = getAllowedOrigins();
+    const isAllowed =
+      origins.includes(origin) ||
+      (config.env !== 'production' && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) ||
+      origin.endsWith('.vercel.app');
+
+    if (isAllowed) {
+      return callback(null, true);
+    }
+
+    // Permissive in non-production environments
+    if (config.env !== 'production') {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS Error: Origin ${origin} not allowed by Access-Control-Allow-Origin.`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['ETag'],
 }));
 
 // 3. Request Logging
@@ -65,8 +93,10 @@ app.use(
   })
 );
 
-// 6. Direct Healthcheck Endpoint (Accessible at /health and /api/health)
+// 6. Direct Healthcheck Endpoints (Unthrottled for Render / cloud monitoring probes)
 app.get('/health', healthController.getHealth);
+app.get('/api/health', healthController.getHealth);
+app.get('/api/v1/health', healthController.getHealth);
 
 // 7. Mount Core REST API Routes under /api with Rate Limiting
 app.use('/api', apiLimiter, routes);

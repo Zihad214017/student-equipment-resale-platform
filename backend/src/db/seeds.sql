@@ -357,7 +357,72 @@ VALUES (
 );
 
 -- ----------------------------------------------------------------------------
--- 7. SEED REVIEWS & RATINGS
+-- 7. SEED PAYMENTS
+-- ----------------------------------------------------------------------------
+-- Payment 1: Completed bKash payment for Chemistry Kit transaction
+INSERT INTO payments (
+    id,
+    transaction_id,
+    buyer_id,
+    seller_id,
+    equipment_id,
+    amount,
+    payment_method,
+    payment_status,
+    provider_transaction_id,
+    provider_reference,
+    provider_response,
+    initiated_at,
+    paid_at
+) VALUES (
+    '60000000-0000-0000-0000-000000000001',
+    '40000000-0000-0000-0000-000000000001', -- Completed Transaction 1 (Chemistry Kit)
+    'c0000000-0000-0000-0000-000000000001', -- Sarah Jenkins (Buyer)
+    'b0000000-0000-0000-0000-000000000001', -- Alex Rivera (Seller)
+    '20000000-0000-0000-0000-000000000004', -- Chemistry Kit
+    25.00,
+    'BKASH',
+    'SUCCESS',
+    'BKASH-TX-20260901-001',
+    'REF-BKASH-001',
+    '{"trxID": "BKASH-TX-20260901-001", "transactionStatus": "Completed", "amount": "25.00", "currency": "BDT"}'::jsonb,
+    CURRENT_TIMESTAMP - INTERVAL '2 days',
+    CURRENT_TIMESTAMP - INTERVAL '2 days'
+);
+
+-- Payment 2: Pending Nagad payment for Drafting Board transaction
+INSERT INTO payments (
+    id,
+    transaction_id,
+    buyer_id,
+    seller_id,
+    equipment_id,
+    amount,
+    payment_method,
+    payment_status,
+    provider_transaction_id,
+    provider_reference,
+    provider_response,
+    initiated_at,
+    paid_at
+) VALUES (
+    '60000000-0000-0000-0000-000000000002',
+    '40000000-0000-0000-0000-000000000002', -- Accepted Transaction 2 (Drafting Board)
+    'c0000000-0000-0000-0000-000000000001', -- Sarah Jenkins (Buyer)
+    'b0000000-0000-0000-0000-000000000001', -- Alex Rivera (Seller)
+    '20000000-0000-0000-0000-000000000005', -- Drafting Board
+    50.00,
+    'NAGAD',
+    'PENDING',
+    'NAGAD-TX-20260910-002',
+    'REF-NAGAD-002',
+    '{"paymentRefId": "NAGAD-TX-20260910-002", "status": "Pending", "amount": "50.00"}'::jsonb,
+    CURRENT_TIMESTAMP - INTERVAL '1 hour',
+    NULL
+);
+
+-- ----------------------------------------------------------------------------
+-- 8. SEED REVIEWS & RATINGS
 -- ----------------------------------------------------------------------------
 -- Sarah reviews Alex for the completed Chemistry Kit transaction
 INSERT INTO reviews (id, transaction_id, equipment_id, reviewer_id, reviewee_id, rating, comment)
@@ -372,7 +437,7 @@ VALUES (
 );
 
 -- ----------------------------------------------------------------------------
--- 8. SEED NOTIFICATIONS
+-- 9. SEED NOTIFICATIONS
 -- ----------------------------------------------------------------------------
 INSERT INTO notifications (user_id, title, message, type, is_read, reference_id, reference_type) VALUES
 -- Notification to Alex (Seller) about new Arduino request
@@ -407,7 +472,7 @@ INSERT INTO notifications (user_id, title, message, type, is_read, reference_id,
 );
 
 -- ----------------------------------------------------------------------------
--- 9. SEED AUDIT LOGS
+-- 10. SEED AUDIT LOGS
 -- ----------------------------------------------------------------------------
 INSERT INTO audit_logs (admin_id, action, target_type, target_id, details, ip_address)
 VALUES (
